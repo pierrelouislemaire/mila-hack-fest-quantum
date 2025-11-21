@@ -155,7 +155,13 @@ class SwaptionDataset(Dataset):
     def __init__(self, X, y):
         self.X = torch.FloatTensor(X.values if isinstance(X, pd.DataFrame) else X)
         self.y = torch.FloatTensor(y.values if isinstance(y, pd.DataFrame) else y)
-    
+
+        # Standardize the dataset
+        self.scaler_X = StandardScaler()
+        self.scaler_y = StandardScaler()
+        self.X = torch.FloatTensor(self.scaler_X.fit_transform(self.X))
+        self.y = torch.FloatTensor(self.scaler_y.fit_transform(self.y))
+
     def __len__(self):
         return len(self.X)
     
@@ -262,6 +268,6 @@ def create_custom_datasets(file_path: str, forecast_horizon: int, context_lenght
     x_test_seq = build_inference_sequences(x_test, x_test.columns, sequence_length=context_lenght)
     
     train_dataset = SwaptionDataset(x_train_seq, y_train)
-    test_dataset = SwaptionDataset(x_test_seq, y_test)
+    test_dataset = SwaptionDataset(x_test_seq, y_test)  
     
     return train_dataset, test_dataset, dates_start, dates_test

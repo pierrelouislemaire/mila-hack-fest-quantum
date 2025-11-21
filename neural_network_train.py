@@ -108,6 +108,7 @@ if __name__ == "__main__":
     results_dir = f"results/{test_name}"
     # Hyper-parameters
     nn_config = {
+        'context_length': 12,
         'batch_size': 64,
         'learning_rate': 1e-03,
         'num_epochs': 100,
@@ -116,6 +117,7 @@ if __name__ == "__main__":
     ###############################
     #        Data loading         #
     ###############################
+    #(train_dataset, test_dataset, dates_start, dates_test,) = create_custom_datasets(file_path='train.xlsx', forecast_horizon=6, context_lenght=nn_config["context_length"], technical_feats=True, split_ratio = 0.20, lags=None)
     # 1. Load the timeseries data.
     (input_train, input_val, target_train, target_val,) = load_timeseries(train_dir, val_dir,)
     # 2. Convert the data to tensors and create input - target pairs. 
