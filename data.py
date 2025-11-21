@@ -155,12 +155,14 @@ class SwaptionDataset(Dataset):
     def __init__(self, X, y):
         self.X = torch.FloatTensor(X.values if isinstance(X, pd.DataFrame) else X)
         self.y = torch.FloatTensor(y.values if isinstance(y, pd.DataFrame) else y)
+                
+        self.X_img = self.X.reshape(self.X.shape[0], self.X.shape[1], 14, 16)  # Reshape to (batch_size, context, height, width)
     
     def __len__(self):
         return len(self.X)
     
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        return self.X_img[idx], self.y[idx]
 
 def load_data(file_path="/Users/cassandrenotton/Documents/projects/mila-hackathon/QFF-Mila-AMF-Quandela/data_swaptions/train.xlsx"):
     """Load swaption data from the given Excel file."""
