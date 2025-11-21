@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.optim as optim
 
 from torch.utils.data import DataLoader, TensorDataset
+from tqdm import tqdm
+
+from data import *
 
 def set_up_gpus():
     if torch.cuda.is_available():
@@ -135,6 +138,63 @@ if __name__ == "__main__":
     ###############################
     #   NN model Training & Val   #
     ###############################
+    epoch_train_losses = []
+    epoch_val_losses = []
+    best_valid_loss = float('inf') # If the loss function need to be minimized, else -inf.
+    best_train_loss = float('inf') # Ibid.
+
+    # Itterate over the epochs.
+    for epoch in range(1, nn_config['num_epochs']):
+        print(f"Epoch {epoch+1}/{nn_config['num_epochs']}")
+
+        #########################
+        # 1. Training phase
+        #########################
+        network.train()
+        train_loss = 0.0
+
+        for (inputs, targets,) in tqdm(train_loader, desc=f"Epoch {epoch} / {nn_config['num_epochs']}"):
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+            # Zero the parameter gradients
+            optimizer.zero_grad()
+            # Forward + Backward + Optimizer
+            outputs = network(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+            optimizer.step()
+            # Adjusting the training epoch loss
+            train_loss += loss.item()
+        # Print statistics.
+        train_loss /= len(train_loader)
+        epoch_train_losses.append(train_loss)
+        print(f"Training Loss: {train_loss:.4f}")
+
+        #########################
+        # 1. Valid phase
+        #########################
+        network.eval()
+        valid_loss = 0.0
+
+        with torch.no_grad():
+            for(inputs, targets,) in val_loader:
+                inputs = inputs.to(device)
+                targets = targets.to(device)
+                # Froward
+                outputs = network(inputs)
+                loss = criterion(outputs, targets)
+                valid_loss += loss.item()
+        # Print statistics.
+        valid_loss /= len(val_loader)
+        epoch_val_losses.append(valid_loss)
+        print(f"Validation Loss: {valid_loss:.4f}")
+
+        # Save the best model.
+        if valid_loss < best_valid_loss:
+            best_valid_loss = valid_loss
+            best_train_loss = train_loss
+            torch.save(network.state_dict(), f"{results_dir}/best_model.pth")
+            print(f"Best model saved with validation loss: {best_valid_loss:.4f}")
 
     ###############################
     # Plotting model performances #
