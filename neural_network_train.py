@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np 
+import os
 import random
 import time
 import torch
@@ -28,24 +29,6 @@ def set_seed(seed: int = 42,):
     else:
         torch.manual_seed(seed)
 
-
-def load_timeseries(train_dir, val_dir,):
-    print("Loading the input timeseries.")
-    imput_train_path = train_dir / "input_series.npy"
-    input_val_path = val_dir / "input_series.npy"
-    input_train = np.load(imput_train_path).astype(np.float32)
-    input_val = np.load(input_val_path).astype(np.float32)
-    print(f"The timeseries shape is: {input_train.shape} and validation shape is: {input_val.shape}")
-
-    print("Loading the target timeseries.")
-    target_train_path = train_dir / "target_series.npy"
-    target_val_path = val_dir / "target_series.npy"
-    target_train = np.load(target_train_path).astype(np.float32)
-    target_val = np.load(target_val_path).astype(np.float32)
-    print(f"The target shape is: {target_train.shape} and validation shape is: {target_val.shape}")
-
-    return (input_train, input_val, target_train, target_val,)
-
 def create_input_target_pairs(input_train, target_train, input_val, target_val,):
     train_dataset = TensorDataset(
         input_train,
@@ -69,22 +52,27 @@ def data_loader(train_dataset, val_dataset, batch_size,):
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
-        drop_last=False,
+        drop_last=True,
     )
 
     return (train_loader, val_loader,)
 
 class dense_model(nn.Module): #TODO
-    def __init__(self, input_size=10, hidden_size=50, output_size=1,):
+    def __init__(self, hidden_size=32, output_size=224,):
         super(dense_model, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(2916, hidden_size)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
+        print(x.shape)
+        x = self.flatten(x)
+        print(x.shape)
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
+        print(out.shape)
         return out
 
 
@@ -106,6 +94,10 @@ if __name__ == "__main__":
     val_dir = "todo"
     test_name = "test1"
     results_dir = f"results/{test_name}"
+
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
     # Hyper-parameters
     nn_config = {
         'context_length': 12,
@@ -122,11 +114,9 @@ if __name__ == "__main__":
     input_val = dataset.X[300:]
     target_train = dataset.y[0:300]
     target_val = dataset.y[300:]
-    # # 1. Load the timeseries data.
-    # (input_train, input_val, target_train, target_val,) = load_timeseries(train_dir, val_dir,)
-    # 2. Convert the data to tensors and create input - target pairs. 
+    # 1. Convert the data to tensors and create input - target pairs. 
     (train_dataset, val_dataset,) = create_input_target_pairs(input_train, target_train, input_val, target_val,)
-    # 3. Create data loaders.
+    # 2. Create data loaders.
     (train_loader, val_loader,) = data_loader(train_dataset, val_dataset, nn_config['batch_size'],)
 
     ###############################
