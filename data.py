@@ -37,6 +37,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import warnings
+from typing import Optional
 warnings.filterwarnings('ignore')
 warnings.filterwarnings('ignore')
 
@@ -154,7 +155,7 @@ class SwaptionDataset(Dataset):
     def __init__(self, X, y):
         self.X = torch.FloatTensor(X.values if isinstance(X, pd.DataFrame) else X)
         self.y = torch.FloatTensor(y.values if isinstance(y, pd.DataFrame) else y)
-    
+        
     def __len__(self):
         return len(self.X)
     
@@ -243,3 +244,24 @@ def build_inference_sequences(df, feature_cols, sequence_length):
             window = np.vstack([pad, window])
         sequences.append(window)
     return np.array(sequences)
+
+
+def create_custom_datasets(file_path: str, forecast_horizon: int, context_lenght: int, technical_feats: bool, split_ratio: float, lags: Optional[list]):
+    
+    x, y, dates = load_and_prepare_data(file_path=file_path, forecast_horizon=forecast_horizon)
+    
+    if lags is not None:
+        x = create_lagged_features(x, feature_cols=x.columns, lags=lags)
+        
+    if technical_feats:
+        x = create_technical_features(x, dates)
+        
+    x_train, x_test, y_train, y_test, dates_start, dates_test = split_data(x, y, dates, test_size=split_ratio)
+    
+    x_train_seq = build_inference_sequences(x_train, x_train.columns, sequence_length=context_lenght)
+    x_test_seq = build_inference_sequences(x_test, x_test.columns, sequence_length=context_lenght)
+    
+    train_dataset = SwaptionDataset(x_train_seq, y_train)
+    test_dataset = SwaptionDataset(x_test_seq, y_test)  
+    
+    return train_dataset, test_dataset, dates_start, dates_test
