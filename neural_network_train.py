@@ -48,12 +48,12 @@ def load_timeseries(train_dir, val_dir,):
 
 def create_input_target_pairs(input_train, target_train, input_val, target_val,):
     train_dataset = TensorDataset(
-        torch.from_numpy(input_train.astype(np.float32)),
-        torch.from_numpy(target_train.astype(np.float32)),
+        input_train,
+        target_train,
     )
     val_dataset = TensorDataset(
-        torch.from_numpy(input_val.astype(np.float32)),
-        torch.from_numpy(target_val.astype(np.float32)),
+        input_val,
+        target_val,
     )
 
     return (train_dataset, val_dataset,)
@@ -117,9 +117,13 @@ if __name__ == "__main__":
     ###############################
     #        Data loading         #
     ###############################
-    #(train_dataset, test_dataset, dates_start, dates_test,) = create_custom_datasets(file_path='train.xlsx', forecast_horizon=6, context_lenght=nn_config["context_length"], technical_feats=True, split_ratio = 0.20, lags=None)
-    # 1. Load the timeseries data.
-    (input_train, input_val, target_train, target_val,) = load_timeseries(train_dir, val_dir,)
+    (dataset, _, dates_start, dates_test,) = create_custom_datasets(file_path='train.xlsx', forecast_horizon=6, context_lenght=nn_config["context_length"], technical_feats=True, split_ratio = 0.20, lags=None)
+    input_train = dataset.X[0:300]
+    input_val = dataset.X[300:]
+    target_train = dataset.y[0:300]
+    target_val = dataset.y[300:]
+    # # 1. Load the timeseries data.
+    # (input_train, input_val, target_train, target_val,) = load_timeseries(train_dir, val_dir,)
     # 2. Convert the data to tensors and create input - target pairs. 
     (train_dataset, val_dataset,) = create_input_target_pairs(input_train, target_train, input_val, target_val,)
     # 3. Create data loaders.
@@ -155,7 +159,7 @@ if __name__ == "__main__":
         network.train()
         train_loss = 0.0
 
-        for (inputs, targets,) in tqdm(train_loader, desc=f"Epoch {epoch} / {nn_config['num_epochs']}"):
+        for (inputs, targets) in tqdm(train_loader, desc=f"Epoch {epoch} / {nn_config['num_epochs']}"):
             inputs = inputs.to(device)
             targets = targets.to(device)
             # Zero the parameter gradients
@@ -179,7 +183,7 @@ if __name__ == "__main__":
         valid_loss = 0.0
 
         with torch.no_grad():
-            for(inputs, targets,) in val_loader:
+            for(inputs, targets) in val_loader:
                 inputs = inputs.to(device)
                 targets = targets.to(device)
                 # Froward

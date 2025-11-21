@@ -155,13 +155,7 @@ class SwaptionDataset(Dataset):
     def __init__(self, X, y):
         self.X = torch.FloatTensor(X.values if isinstance(X, pd.DataFrame) else X)
         self.y = torch.FloatTensor(y.values if isinstance(y, pd.DataFrame) else y)
-
-        # Standardize the dataset
-        self.scaler_X = StandardScaler()
-        self.scaler_y = StandardScaler()
-        self.X = torch.FloatTensor(self.scaler_X.fit_transform(self.X))
-        self.y = torch.FloatTensor(self.scaler_y.fit_transform(self.y))
-
+        
     def __len__(self):
         return len(self.X)
     
